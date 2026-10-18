@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>互動式單字練習 App - Sunshine Spelling Bee</title>
+  <style>
+    :root {
+      --bg-page: #eceff1;
+      --card-bg: #ffffff;
+      --header-bg: #d9edf7;
+      --header-border: #bce8f1;
+      --blue-btn: #005b9f;
+      --blue-btn-hover: #00467a;
+      --green-btn: #269947;
+      --green-btn-hover: #1e7a38;
+      --red-btn: #d61d24;
+      --red-btn-hover: #ad151b;
+      --gray-btn: #e8ecef;
+      --gray-btn-hover: #d5dce2;
+      --text-main: #2c3e50;
+      --text-blue: #0d47a1;
+      --text-red: #c62828;
+      --border-light: #dce1e5;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", "PingFang TC", Roboto, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px 15px 60px;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+    }
+
+    .app-container {
+      max-width: 1050px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      padding: 22px 28px 36px;
+    }
+
+    .top-notice {
+      text-align: center;
+      font-size: 15px;
+      color: #455a64;
+      margin-bottom: 16px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    /* Dashboard Box matching Photo 1 */
+    .dashboard-box {
+      background-color: var(--header-bg);
+      border: 1.5px solid var(--header-border);
+      border-radius: 10px;
+      padding: 18px 24px;
+      margin-bottom: 20px;
+    }
+
+    .score-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text-blue);
+      margin: 0 0 10px 0;
+    }
+
+    .wrong-count {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-red);
+      margin: 0 0 8px 0;
+    }
+
+    .round-progress {
+      font-size: 16px;
+      font-weight: 600;
+      color: #37474f;
+      margin: 0 0 16px 0;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 7px;
+      padding: 11px 18px;
+      font-size: 15.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-check {
+      background-color: var(--blue-btn);
+      color: #fff;
+    }
+    .btn-check:hover { background-color: var(--blue-btn-hover); }
+
+    .btn-draw {
+      background-color: var(--green-btn);
+      color: #fff;
+    }
+    .btn-draw:hover { background-color: var(--green-btn-hover); }
+
+    .btn-wrong {
+      background-color: var(--red-btn);
+      color: #fff;
+    }
+    .btn-wrong:hover { background-color: var(--red-btn-hover); }
+
+    .btn-secondary {
+      background-color: var(--gray-btn);
+      color: #37474f;
+      border: 1px solid #cfd8dc;
+    }
+    .btn-secondary:hover { background-color: var(--gray-btn-hover); }
+
+    .btn-danger-light {
+      background-color: var(--gray-btn);
+      color: #c62828;
+      border: 1px solid #cfd8dc;
+    }
+    .btn-danger-light:hover { background-color: #f9d8d6; }
+
+    /* Image Upload & Question Bank Manager Panel */
+    .bank-manager {
+      background: #f8fafc;
+      border: 1.5px dashed #90caf9;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+    }
+
+    .bank-manager-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .bank-manager-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1565c0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .bank-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .api-key-input {
+      padding: 9px 12px;
+      border: 1px solid #b0bec5;
+      border-radius: 6px;
+      font-size: 14px;
+      width: 250px;
+    }
+
+    .upload-status {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #0d47a1;
+      font-weight: 600;
+      display: none;
+    }
+
+    /* Question List matching Photo 1 */
+    .questions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .question-card {
+      background: #fafafa;
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 19px;
+      line-height: 1.6;
+      color: #263238;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+
+    .question-card.correct-card {
+      background-color: #f1f8e9;
+      border-color: #81c784;
+    }
+
+    .question-card.wrong-card {
+      background-color: #ffebee;
+      border-color: #e57373;
+    }
+
+    .q-num {
+      font-weight: 700;
+      color: #607d8b;
+      min-width: 36px;
+      font-size: 18px;
+    }
+
+    .speaker-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background-color: #269947;
+      border: none;
+      color: white;
+      font-size: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+      transition: transform 0.12s ease, background-color 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .speaker-btn:hover {
+      background-color: #1e7a38;
+      transform: scale(1.06);
+    }
+
+    .sentence-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .word-input {
+      width: 210px;
+      height: 42px;
+      border: 1.5px solid #90a4ae;
+      border-radius: 6px;
+      background-color: #f5f7f8;
+      font-size: 18px;
+      text-align: center;
+      color: #263238;
+      padding: 4px 10px;
+      outline: none;
+      transition: all 0.15s;
+    }
+
+    .word-input:focus {
+      border-color: #005b9f;
+      background-color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(0, 91, 159, 0.15);
+    }
+
+    .word-input.input-correct {
+      border-color: #2e7d32;
+      background-color: #e8f5e9;
+      color: #1b5e20;
+      font-weight: 700;
+    }
+
+    .word-input.input-wrong {
+      border-color: #c62828;
+      background-color: #ffebee;
+      color: #b71c1c;
+      font-weight: 700;
+    }
+
+    .hint-badge {
+      font-size: 14px;
+      color: #546e7a;
+      background: #eceff1;
+      padding: 3px 9px;
+      border-radius: 6px;
+      margin-left: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .feedback-row {
+      width: 100%;
+      padding-left: 92px;
+      font-size: 15px;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .feedback-correct {
+      color: #2e7d32;
+      font-weight: 700;
+    }
+
+    .feedback-wrong {
+      color: #c62828;
+      font-weight: 700;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: #607d8b;
+      font-size: 18px;
+      background: #fafafa;
+      border-radius: 10px;
+      border: 1px dashed #cfd8dc;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      padding: 16px;
+    }
+
+    .modal-card {
+      background: #fff;
+      max-width: 680px;
+      width: 100%;
+      border-radius: 12px;
+      padding: 24px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .word-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    .word-table th, .word-table td {
+      border: 1px solid #cfd8dc;
+      padding: 8px 10px;
+      text-align: left;
+    }
+    .word-table th {
+      background: #eceff1;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <div class="top-notice">
+    錯題永久保留：只要答錯就會存入錯題庫，直到在錯題模式中答對為止
+  </div>
+
+  <!-- Main Dashboard matching Screenshot 1 -->
+  <div class="dashboard-box">
+    <div class="score-title" id="scoreDisplay">得分：0 / 30</div>
+    <div class="wrong-count" id="wrongCountDisplay">錯題資料庫：0 題</div>
+    <div class="round-progress" id="progressDisplay">本輪進度：0 / 80 題</div>
+
+    <div class="btn-row">
+      <button class="btn btn-check" onclick="checkAnswers()">1. 檢查答案</button>
+      <button class="btn btn-draw" onclick="draw30Questions()">2. 抽30題 (未練優先)</button>
+      <button class="btn btn-wrong" onclick="practiceWrongOnly()">3. 只練錯題庫</button>
+      <button class="btn btn-secondary" onclick="resetRoundProgress()">↻ 重置本輪進度</button>
+      <button class="btn btn-secondary" onclick="exportWrongBank()">💾 匯出錯題</button>
+      <button class="btn btn-danger-light" onclick="clearWrongBank()">🗑️ 清空錯題</button>
+    </div>
+  </div>
+
+  <!-- Multi-Image Upload & Question Bank Controls -->
+  <div class="bank-manager">
+    <div class="bank-manager-header">
+      <div class="bank-manager-title">
+        📸 題庫管理（已內建單字表 #81~#160 共 80 題小學三年級例句，支援上傳多張單字圖片自動擴充題庫）
+      </div>
+      <div class="bank-controls">
+        <button class="btn btn-secondary" onclick="openBankModal()">📋 檢視目前題庫 (<span id="totalBankBadge">80</span>)</button>
+        <button class="btn btn-secondary" onclick="restoreDefaultBank()">🔄 還原預設80題</button>
+        <button class="btn btn-danger-light" onclick="clearEntireQuestionBank()">⚠️ 清除題庫</button>
+      </div>
+    </div>
+
+    <div class="bank-controls">
+      <input type="password" id="geminiApiKey" class="api-key-input" placeholder="輸入 Gemini API Key (解析新圖片用)" />
+      <input type="file" id="imageUploadInput" accept="image/*" multiple style="display:none" onchange="handleMultipleImages(event)" />
+      <button class="btn btn-draw" onclick="document.getElementById('imageUploadInput').click()">
+        📤 上傳多張單字圖片 (自動產生小三程度例句並加入題庫)
+      </button>
+      <button class="btn btn-secondary" onclick="exportFullBank()">⬇️ 匯出題庫 JSON</button>
+      <input type="file" id="jsonImportInput" accept=".json" style="display:none" onchange="importBankJson(event)" />
+      <button class="btn btn-secondary" onclick="document.getElementById('jsonImportInput').click()">⬆️ 匯入題庫 JSON</button>
+    </div>
+    <div id="uploadStatus" class="upload-status"></div>
+  </div>
+
+  <!-- Questions Container -->
+  <div id="questionsContainer" class="questions-list"></div>
+</div>
+
+<!-- Modal for viewing current Question Bank -->
+<div class="modal-backdrop" id="bankModal">
+  <div class="modal-card">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="margin:0;">📚 目前題庫清單（小學三年級例句）</h3>
+      <button class="btn btn-secondary" onclick="closeBankModal()">關閉</button>
+    </div>
+    <div id="bankTableContainer"></div>
+  </div>
+</div>
+
+<script>
+  // 預設題庫：完整收錄照片 2 (Sunshine Spelling Bee Intermediate Word List #81 - #160)
+  const DEFAULT_BANK = [
+  {
+    "id": 81,
+    "word": "persistent",
+    "pos": "adj.",
+    "zh": "堅持不懈的/持續的",
+    "sentence": "The little boy is very {blank} and tries again and again."
+  },
+  {
+    "id": 82,
+    "word": "personal",
+    "pos": "adj.",
+    "zh": "個人的/私人的",
+    "sentence": "Please keep your {blank} things in your own bag."
+  },
+  {
+    "id": 83,
+    "word": "personality",
+    "pos": "n.",
+    "zh": "個性/人格",
+    "sentence": "My new friend has a very happy and kind {blank}."
+  },
+  {
+    "id": 84,
+    "word": "personally",
+    "pos": "adv.",
+    "zh": "親自地/就個人而言",
+    "sentence": "The teacher gave the prize to me {blank}."
+  },
+  {
+    "id": 85,
+    "word": "perspective",
+    "pos": "n.",
+    "zh": "觀點/透視法",
+    "sentence": "Reading books helps us see the world from a new {blank}."
+  },
+  {
+    "id": 86,
+    "word": "persuade",
+    "pos": "v.",
+    "zh": "說服/勸服",
+    "sentence": "I tried to {blank} my mom to buy me a cute puppy."
+  },
+  {
+    "id": 87,
+    "word": "persuasive",
+    "pos": "n./adj.",
+    "zh": "有說服力的",
+    "sentence": "Her talk was very {blank}, so everyone agreed with her."
+  },
+  {
+    "id": 88,
+    "word": "petrol",
+    "pos": "n.",
+    "zh": "汽油",
+    "sentence": "Dad stopped the car to put more {blank} in it."
+  },
+  {
+    "id": 89,
+    "word": "pharaoh",
+    "pos": "n.",
+    "zh": "法老王",
+    "sentence": "A {blank} was a king in old Egypt a long time ago."
+  },
+  {
+    "id": 90,
+    "word": "pharmacy",
+    "pos": "n.",
+    "zh": "藥局/藥劑學",
+    "sentence": "Mom went to the {blank} to buy some medicine for my cold."
+  },
+  {
+    "id": 91,
+    "word": "phase",
+    "pos": "n.",
+    "zh": "階段/時期",
+    "sentence": "The moon looks like a banana in this {blank}."
+  },
+  {
+    "id": 92,
+    "word": "phenomenon",
+    "pos": "n.",
+    "zh": "現象",
+    "sentence": "A rainbow in the sky is a beautiful natural {blank}."
+  },
+  {
+    "id": 93,
+    "word": "philosophy",
+    "pos": "n.",
+    "zh": "哲學/人生觀",
+    "sentence": "His {blank} in life is to always be kind and happy."
+  },
+  {
+    "id": 94,
+    "word": "photograph",
+    "pos": "n./v.",
+    "zh": "照片/拍照",
+    "sentence": "We took a family {blank} in front of the big tree."
+  },
+  {
+    "id": 95,
+    "word": "photographer",
+    "pos": "n.",
+    "zh": "攝影師",
+    "sentence": "The {blank} told us to smile at the camera."
+  },
+  {
+    "id": 96,
+    "word": "photography",
+    "pos": "n.",
+    "zh": "攝影術",
+    "sentence": "My uncle loves {blank} and takes pictures of birds every day."
+  },
+  {
+    "id": 97,
+    "word": "photosynthesis",
+    "pos": "n.",
+    "zh": "光合作用",
+    "sentence": "Green plants use sunlight to make food by {blank}."
+  },
+  {
+    "id": 98,
+    "word": "phrase",
+    "pos": "n.",
+    "zh": "片語/短語",
+    "sentence": "'Thank you very much' is a polite English {blank}."
+  },
+  {
+    "id": 99,
+    "word": "physical",
+    "pos": "adj.",
+    "zh": "身體的/物質的/物理的",
+    "sentence": "Running and swimming are good {blank} exercises for kids."
+  },
+  {
+    "id": 100,
+    "word": "physician",
+    "pos": "n.",
+    "zh": "內科醫生",
+    "sentence": "When I had a fever, the kind {blank} helped me feel better."
+  },
+  {
+    "id": 101,
+    "word": "physicist",
+    "pos": "n.",
+    "zh": "物理學家",
+    "sentence": "A {blank} is a scientist who studies how light and things move."
+  },
+  {
+    "id": 102,
+    "word": "physics",
+    "pos": "n.",
+    "zh": "物理學",
+    "sentence": "In {blank} class, we learn about magnets, light, and sound."
+  },
+  {
+    "id": 103,
+    "word": "pickpocket",
+    "pos": "n.",
+    "zh": "扒手",
+    "sentence": "Watch your bag carefully so a {blank} cannot take your wallet."
+  },
+  {
+    "id": 104,
+    "word": "picture",
+    "pos": "n./v.",
+    "zh": "圖片/照片/想像",
+    "sentence": "I drew a colorful {blank} of my family and our dog."
+  },
+  {
+    "id": 105,
+    "word": "piece",
+    "pos": "n.",
+    "zh": "碎片/一個/零件",
+    "sentence": "May I have a big {blank} of chocolate birthday cake?"
+  },
+  {
+    "id": 106,
+    "word": "pigeon",
+    "pos": "n.",
+    "zh": "鴿子",
+    "sentence": "A gray {blank} flew down to eat bread crumbs in the park."
+  },
+  {
+    "id": 107,
+    "word": "pile",
+    "pos": "n./v.",
+    "zh": "堆/一堆/堆積",
+    "sentence": "There is a big {blank} of storybooks on my desk."
+  },
+  {
+    "id": 108,
+    "word": "pillar",
+    "pos": "n.",
+    "zh": "柱子/支柱",
+    "sentence": "The tall stone {blank} holds up the roof of the building."
+  },
+  {
+    "id": 109,
+    "word": "pillow",
+    "pos": "n.",
+    "zh": "枕頭",
+    "sentence": "I put my head on the soft {blank} and went to sleep."
+  },
+  {
+    "id": 110,
+    "word": "pillowcase",
+    "pos": "n.",
+    "zh": "枕頭套",
+    "sentence": "Mom put a clean blue {blank} on my pillow today."
+  },
+  {
+    "id": 111,
+    "word": "pilot",
+    "pos": "n.",
+    "zh": "飛行員/領航員",
+    "sentence": "The {blank} flies the big airplane high up in the sky."
+  },
+  {
+    "id": 112,
+    "word": "pimple",
+    "pos": "n.",
+    "zh": "青春痘/丘疹",
+    "sentence": "My big brother has a small red {blank} on his nose."
+  },
+  {
+    "id": 113,
+    "word": "pinch",
+    "pos": "v.",
+    "zh": "捏/夾/掐",
+    "sentence": "Be careful not to {blank} your fingers in the heavy door."
+  },
+  {
+    "id": 114,
+    "word": "pineapple",
+    "pos": "n.",
+    "zh": "鳳梨",
+    "sentence": "The yellow {blank} tastes very sweet and juicy."
+  },
+  {
+    "id": 115,
+    "word": "pioneer",
+    "pos": "n.",
+    "zh": "先驅/拓荒者",
+    "sentence": "The brave {blank} built a wooden house in the new land."
+  },
+  {
+    "id": 116,
+    "word": "pitch",
+    "pos": "n.",
+    "zh": "音高/球場/投球",
+    "sentence": "The boys are playing soccer on the green grassy {blank}."
+  },
+  {
+    "id": 117,
+    "word": "pitcher",
+    "pos": "n.",
+    "zh": "投手/水罐",
+    "sentence": "Mom poured cold orange juice from a big glass {blank}."
+  },
+  {
+    "id": 118,
+    "word": "plague",
+    "pos": "n./v.",
+    "zh": "瘟疫/折磨/騷擾",
+    "sentence": "Washing our hands often helps stop a bad sickness or {blank}."
+  },
+  {
+    "id": 119,
+    "word": "plain",
+    "pos": "adj.",
+    "zh": "樸素的/簡單的/清楚的",
+    "sentence": "She is wearing a {blank} white T-shirt with no pictures on it."
+  },
+  {
+    "id": 120,
+    "word": "plane",
+    "pos": "n.",
+    "zh": "飛機/平面",
+    "sentence": "Look up! A big white {blank} is flying in the blue sky."
+  },
+  {
+    "id": 121,
+    "word": "planet",
+    "pos": "n.",
+    "zh": "行星",
+    "sentence": "Earth is the beautiful blue {blank} where we all live."
+  },
+  {
+    "id": 122,
+    "word": "planning",
+    "pos": "n.",
+    "zh": "計畫/規劃",
+    "sentence": "With good {blank}, our family trip to the zoo will be fun."
+  },
+  {
+    "id": 123,
+    "word": "plant",
+    "pos": "n./v.",
+    "zh": "植物/工廠/種植",
+    "sentence": "I water the little green {blank} on my window every morning."
+  },
+  {
+    "id": 124,
+    "word": "plastic",
+    "pos": "n./adj.",
+    "zh": "塑膠/塑膠製的",
+    "sentence": "My water bottle is made of light {blank} so it does not break."
+  },
+  {
+    "id": 125,
+    "word": "plate",
+    "pos": "n.",
+    "zh": "盤子/板/車牌",
+    "sentence": "Please put the warm cookies on the clean white {blank}."
+  },
+  {
+    "id": 126,
+    "word": "platform",
+    "pos": "n.",
+    "zh": "平台/月台/政綱",
+    "sentence": "We waited on the train {blank} for the train to come."
+  },
+  {
+    "id": 127,
+    "word": "playground",
+    "pos": "n.",
+    "zh": "操場/遊戲場",
+    "sentence": "After class, the children run and play on the school {blank}."
+  },
+  {
+    "id": 128,
+    "word": "playmate",
+    "pos": "n.",
+    "zh": "玩伴",
+    "sentence": "Tom is my best {blank}, and we love riding bikes together."
+  },
+  {
+    "id": 129,
+    "word": "plead",
+    "pos": "v.",
+    "zh": "懇求/抗辯",
+    "sentence": "The kids {blank} with their dad for five more minutes to play."
+  },
+  {
+    "id": 130,
+    "word": "pleasant",
+    "pos": "adj.",
+    "zh": "令人愉快的/宜人的",
+    "sentence": "We had a {blank} walk in the sunny park this afternoon."
+  },
+  {
+    "id": 131,
+    "word": "pleased",
+    "pos": "adj.",
+    "zh": "高興的/滿意的",
+    "sentence": "Mom was very {blank} when she saw my clean bedroom."
+  },
+  {
+    "id": 132,
+    "word": "pleasure",
+    "pos": "n.",
+    "zh": "愉快/樂趣",
+    "sentence": "Reading funny comic books gives me a lot of {blank}."
+  },
+  {
+    "id": 133,
+    "word": "plentiful",
+    "pos": "adj.",
+    "zh": "豐富的/充足的",
+    "sentence": "Fresh apples and bananas are {blank} at the fruit market."
+  },
+  {
+    "id": 134,
+    "word": "plenty",
+    "pos": "pron.",
+    "zh": "豐富/充足",
+    "sentence": "Don't hurry, we still have {blank} of time before school starts."
+  },
+  {
+    "id": 135,
+    "word": "plot",
+    "pos": "n./v.",
+    "zh": "情節/陰謀/密謀",
+    "sentence": "The {blank} of this cartoon movie is very exciting and funny."
+  },
+  {
+    "id": 136,
+    "word": "plumber",
+    "pos": "n.",
+    "zh": "水電工/鉛管工",
+    "sentence": "Dad called a {blank} to fix the broken water pipe in the bathroom."
+  },
+  {
+    "id": 137,
+    "word": "plural",
+    "pos": "adj.",
+    "zh": "複數的",
+    "sentence": "The {blank} form of the word 'cat' is 'cats'."
+  },
+  {
+    "id": 138,
+    "word": "pocket",
+    "pos": "n.",
+    "zh": "口袋",
+    "sentence": "I put the shiny coin inside my jacket {blank}."
+  },
+  {
+    "id": 139,
+    "word": "poem",
+    "pos": "n.",
+    "zh": "詩",
+    "sentence": "Our teacher read a short, sweet {blank} about spring flowers."
+  },
+  {
+    "id": 140,
+    "word": "poet",
+    "pos": "n.",
+    "zh": "詩人",
+    "sentence": "A {blank} is a person who writes beautiful poems."
+  },
+  {
+    "id": 141,
+    "word": "poetry",
+    "pos": "n.",
+    "zh": "詩歌",
+    "sentence": "We learned to read and write simple {blank} in English class."
+  },
+  {
+    "id": 142,
+    "word": "point",
+    "pos": "n./v.",
+    "zh": "點/分數/指向",
+    "sentence": "Our basketball team scored one more {blank} and won the game!"
+  },
+  {
+    "id": 143,
+    "word": "pointed",
+    "pos": "adj.",
+    "zh": "尖的/銳利的",
+    "sentence": "The witch in the storybook wears a tall, {blank} black hat."
+  },
+  {
+    "id": 144,
+    "word": "poison",
+    "pos": "n./v.",
+    "zh": "毒藥/下毒",
+    "sentence": "In the fairy tale, the bad queen put {blank} in the red apple."
+  },
+  {
+    "id": 145,
+    "word": "poisonous",
+    "pos": "adj.",
+    "zh": "有毒的",
+    "sentence": "Do not touch the bright red mushroom because it may be {blank}."
+  },
+  {
+    "id": 146,
+    "word": "police",
+    "pos": "n.",
+    "zh": "警察/警方",
+    "sentence": "If you get lost on the street, ask the {blank} for help."
+  },
+  {
+    "id": 147,
+    "word": "policeman",
+    "pos": "n.",
+    "zh": "男警",
+    "sentence": "The friendly {blank} helped the children cross the busy road."
+  },
+  {
+    "id": 148,
+    "word": "policy",
+    "pos": "n.",
+    "zh": "政策/保險單",
+    "sentence": "It is our school {blank} to wear a uniform every Monday."
+  },
+  {
+    "id": 149,
+    "word": "polite",
+    "pos": "adj.",
+    "zh": "有禮貌的",
+    "sentence": "The {blank} girl always says 'please' and 'thank you'."
+  },
+  {
+    "id": 150,
+    "word": "politely",
+    "pos": "adv.",
+    "zh": "有禮貌地",
+    "sentence": "He bowed {blank} to his teacher at the classroom door."
+  },
+  {
+    "id": 151,
+    "word": "political",
+    "pos": "adj.",
+    "zh": "政治的",
+    "sentence": "The news on TV talked about a big {blank} meeting today."
+  },
+  {
+    "id": 152,
+    "word": "politician",
+    "pos": "n.",
+    "zh": "政治人物",
+    "sentence": "The {blank} promised to build more parks for the city."
+  },
+  {
+    "id": 153,
+    "word": "politics",
+    "pos": "n.",
+    "zh": "政治",
+    "sentence": "Grandpa likes reading the newspaper to learn about {blank}."
+  },
+  {
+    "id": 154,
+    "word": "pollute",
+    "pos": "n./v.",
+    "zh": "污染",
+    "sentence": "We should never throw trash into the river and {blank} the water."
+  },
+  {
+    "id": 155,
+    "word": "pollution",
+    "pos": "n.",
+    "zh": "污染",
+    "sentence": "Riding a bicycle instead of driving helps cut down air {blank}."
+  },
+  {
+    "id": 156,
+    "word": "popcorn",
+    "pos": "n.",
+    "zh": "爆米花",
+    "sentence": "We love eating warm, buttery {blank} when we watch a movie."
+  },
+  {
+    "id": 157,
+    "word": "popular",
+    "pos": "adj.",
+    "zh": "受歡迎的/流行的",
+    "sentence": "Ice cream is a very {blank} treat on hot summer days."
+  },
+  {
+    "id": 158,
+    "word": "popularity",
+    "pos": "n.",
+    "zh": "聲望/流行",
+    "sentence": "The cute cartoon cat gained great {blank} among all the kids."
+  },
+  {
+    "id": 159,
+    "word": "population",
+    "pos": "n.",
+    "zh": "人口",
+    "sentence": "Tokyo is a huge city with a very large {blank}."
+  },
+  {
+    "id": 160,
+    "word": "portable",
+    "pos": "adj.",
+    "zh": "可攜式的",
+    "sentence": "Dad brought a small, {blank} fan to keep us cool at the beach."
+  }
+];
+
+  const STORAGE_KEYS = {
+    BANK: 'spelling_bee_question_bank_v1',
+    PRACTICED: 'spelling_bee_practiced_ids_v1',
+    WRONG: 'spelling_bee_wrong_ids_v1',
+    API_KEY: 'spelling_bee_gemini_api_key_v1'
+  };
+
+  let questionBank = [];
+  let practicedIds = new Set();
+  let wrongIds = new Set();
+  let currentQuiz = [];
+  let isWrongMode = false;
+
+  function initApp() {
+    // Load API key if saved
+    const savedKey = localStorage.getItem(STORAGE_KEYS.API_KEY);
+    if (savedKey) {
+      document.getElementById('geminiApiKey').value = savedKey;
+    }
+    document.getElementById('geminiApiKey').addEventListener('change', (e) => {
+      localStorage.setItem(STORAGE_KEYS.API_KEY, e.target.value.trim());
+    });
+
+    // Load Question Bank
+    const savedBank = localStorage.getItem(STORAGE_KEYS.BANK);
+    if (savedBank !== null) {
+      try {
+        questionBank = JSON.parse(savedBank);
+      } catch (e) {
+        questionBank = [...DEFAULT_BANK];
+      }
+    } else {
+      questionBank = [...DEFAULT_BANK];
+      saveBank();
+    }
+
+    // Load Practiced & Wrong IDs
+    try {
+      const p = JSON.parse(localStorage.getItem(STORAGE_KEYS.PRACTICED) || '[]');
+      practicedIds = new Set(p);
+      const w = JSON.parse(localStorage.getItem(STORAGE_KEYS.WRONG) || '[]');
+      wrongIds = new Set(w);
+    } catch (e) {
+      practicedIds = new Set();
+      wrongIds = new Set();
+    }
+
+    draw30Questions();
+  }
+
+  function saveBank() {
+    localStorage.setItem(STORAGE_KEYS.BANK, JSON.stringify(questionBank));
+    updateDashboard(0, currentQuiz.length);
+  }
+
+  function saveProgress() {
+    localStorage.setItem(STORAGE_KEYS.PRACTICED, JSON.stringify([...practicedIds]));
+    localStorage.setItem(STORAGE_KEYS.WRONG, JSON.stringify([...wrongIds]));
+  }
+
+  function updateDashboard(score = 0, total = currentQuiz.length) {
+    document.getElementById('scoreDisplay').textContent = `得分：${score} / ${total}`;
+    document.getElementById('wrongCountDisplay').textContent = `錯題資料庫：${wrongIds.size} 題`;
+    document.getElementById('progressDisplay').textContent = `本輪進度：${practicedIds.size} / ${questionBank.length} 題`;
+    document.getElementById('totalBankBadge').textContent = questionBank.length;
+  }
+
+  function shuffleArray(arr) {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  // 2. 抽30題 (未練優先)
+  function draw30Questions() {
+    isWrongMode = false;
+    if (questionBank.length === 0) {
+      currentQuiz = [];
+      renderQuestions();
+      updateDashboard(0, 0);
+      return;
+    }
+
+    const unpracticed = questionBank.filter(q => !practicedIds.has(q.word.toLowerCase()));
+    const practiced = questionBank.filter(q => practicedIds.has(q.word.toLowerCase()));
+
+    let pool = [...shuffleArray(unpracticed), ...shuffleArray(practiced)];
+    currentQuiz = pool.slice(0, Math.min(30, pool.length));
+
+    // Mark drawn questions as practiced in this round
+    currentQuiz.forEach(q => practicedIds.add(q.word.toLowerCase()));
+    saveProgress();
+
+    renderQuestions();
+    updateDashboard(0, currentQuiz.length);
+  }
+
+  // 3. 只練錯題庫
+  function practiceWrongOnly() {
+    const wrongList = questionBank.filter(q => wrongIds.has(q.word.toLowerCase()));
+    if (wrongList.length === 0) {
+      alert('目前錯題資料庫為 0 題！太棒了！');
+      return;
+    }
+    isWrongMode = true;
+    currentQuiz = shuffleArray(wrongList);
+    renderQuestions();
+    updateDashboard(0, currentQuiz.length);
+  }
+
+  // 渲染題目列表 (完全比照附圖1的排版與字數提示)
+  function renderQuestions() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+
+    if (currentQuiz.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          📭 目前題庫沒有題目。請點擊上方「📤 上傳多張單字圖片」新增題庫，或點擊「🔄 還原預設80題」。
+        </div>`;
+      return;
+    }
+
+    currentQuiz.forEach((item, idx) => {
+      const wordLen = item.word.trim().length;
+      const parts = item.sentence.split('{blank}');
+      const beforeText = parts[0] || '';
+      const afterText = parts[1] || '';
+
+      const card = document.createElement('div');
+      card.className = 'question-card';
+      card.id = `q-card-${idx}`;
+
+      card.innerHTML = `
+        <div class="q-num">#${idx + 1}</div>
+        <button class="speaker-btn" title="點擊聽單字與例句發音" onclick="speakQuestion(${idx})">
+          🔊
+        </button>
+        <div class="sentence-wrap">
+          <span>${beforeText}</span>
+          <input
+            type="text"
+            class="word-input"
+            id="input-${idx}"
+            placeholder="(${wordLen}字)"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            onkeydown="if(event.key==='Enter') checkAnswers();"
+          />
+          <span>${afterText}</span>
+          <span class="hint-badge" title="點擊聽單字發音" onclick="speakWordOnly(${idx})">
+            ${item.pos || ''} ${item.zh || ''}
+          </span>
+        </div>
+        <div class="feedback-row" id="feedback-${idx}"></div>
+      `;
+
+      container.appendChild(card);
+    });
+  }
+
+  // 語音朗讀：先唸單字、再唸完整句子
+  function speakQuestion(idx) {
+    const item = currentQuiz[idx];
+    if (!item || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+
+    const fullSentence = item.sentence.replace('{blank}', item.word);
+    const utterWord = new SpeechSynthesisUtterance(item.word);
+    utterWord.lang = 'en-US';
+    utterWord.rate = 0.85;
+
+    const utterSentence = new SpeechSynthesisUtterance(fullSentence);
+    utterSentence.lang = 'en-US';
+    utterSentence.rate = 0.9;
+
+    window.speechSynthesis.speak(utterWord);
+    window.speechSynthesis.speak(utterSentence);
+  }
+
+  function speakWordOnly(idx) {
+    const item = currentQuiz[idx];
+    if (!item || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterWord = new SpeechSynthesisUtterance(item.word);
+    utterWord.lang = 'en-US';
+    utterWord.rate = 0.85;
+    window.speechSynthesis.speak(utterWord);
+  }
+
+  // 1. 檢查答案
+  function checkAnswers() {
+    if (currentQuiz.length === 0) return;
+    let correctCount = 0;
+
+    currentQuiz.forEach((item, idx) => {
+      const inputEl = document.getElementById(`input-${idx}`);
+      const cardEl = document.getElementById(`q-card-${idx}`);
+      const feedbackEl = document.getElementById(`feedback-${idx}`);
+
+      const userAns = (inputEl.value || '').trim().toLowerCase();
+      const targetAns = item.word.trim().toLowerCase();
+
+      inputEl.classList.remove('input-correct', 'input-wrong');
+      cardEl.classList.remove('correct-card', 'wrong-card');
+      feedbackEl.style.display = 'block';
+
+      if (userAns === targetAns) {
+        correctCount++;
+        inputEl.classList.add('input-correct');
+        cardEl.classList.add('correct-card');
+        feedbackEl.className = 'feedback-row feedback-correct';
+        feedbackEl.textContent = `✓ 答對了！ ${item.word} (${item.pos} ${item.zh})`;
+
+        // 若在「只練錯題庫」模式中答對，從錯題庫移除
+        if (isWrongMode) {
+          wrongIds.delete(targetAns);
+        }
+      } else {
+        inputEl.classList.add('input-wrong');
+        cardEl.classList.add('wrong-card');
+        feedbackEl.className = 'feedback-row feedback-wrong';
+        feedbackEl.textContent = `✗ 正確答案：${item.word} （${item.pos} ${item.zh}）`;
+
+        // 只要答錯就永久存入錯題庫
+        wrongIds.add(targetAns);
+      }
+    });
+
+    saveProgress();
+    updateDashboard(correctCount, currentQuiz.length);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // 重置本輪進度
+  function resetRoundProgress() {
+    if (!confirm('確定要重置本輪進度嗎？（已練過的題目紀錄將歸零，錯題庫會保留）')) return;
+    practicedIds.clear();
+    saveProgress();
+    draw30Questions();
+  }
+
+  // 匯出錯題
+  function exportWrongBank() {
+    const wrongList = questionBank.filter(q => wrongIds.has(q.word.toLowerCase()));
+    if (wrongList.length === 0) {
+      alert('目前沒有錯題可以匯出！');
+      return;
+    }
+    let content = "No.\tWord\tPOS\t中文解釋\t練習例句\n";
+    wrongList.forEach((item, i) => {
+      const fullSent = item.sentence.replace('{blank}', `[${item.word}]`);
+      content += `${i + 1}\t${item.word}\t${item.pos}\t${item.zh}\t${fullSent}\n`;
+    });
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `wrong_words_${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+  }
+
+  // 清空錯題
+  function clearWrongBank() {
+    if (wrongIds.size === 0) {
+      alert('錯題庫已經是空的！');
+      return;
+    }
+    if (!confirm('確定要清空所有錯題紀錄嗎？')) return;
+    wrongIds.clear();
+    saveProgress();
+    if (isWrongMode) {
+      draw30Questions();
+    } else {
+      updateDashboard(0, currentQuiz.length);
+    }
+  }
+
+  // 清除整個題庫功能 (使用者指定需求)
+  function clearEntireQuestionBank() {
+    if (!confirm('⚠️ 確定要「清除題庫」嗎？\n清除後題庫將變為 0 題，您可以重新上傳單字圖片建立新題庫（或隨時點「還原預設80題」）。')) return;
+    questionBank = [];
+    practicedIds.clear();
+    wrongIds.clear();
+    currentQuiz = [];
+    saveBank();
+    saveProgress();
+    renderQuestions();
+    updateDashboard(0, 0);
+  }
+
+  // 還原預設 80 題
+  function restoreDefaultBank() {
+    if (!confirm('確定要載入/還原附圖的預設 80 個單字題庫 (#81 ~ #160) 嗎？')) return;
+    questionBank = [...DEFAULT_BANK];
+    practicedIds.clear();
+    saveBank();
+    saveProgress();
+    draw30Questions();
+  }
+
+  // 匯出與匯入完整題庫 JSON
+  function exportFullBank() {
+    const blob = new Blob([JSON.stringify(questionBank, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `spelling_question_bank_${questionBank.length}words.json`;
+    a.click();
+  }
+
+  function importBankJson(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (Array.isArray(imported)) {
+          const existingWords = new Set(questionBank.map(q => q.word.toLowerCase()));
+          let added = 0;
+          imported.forEach(item => {
+            if (item.word && item.sentence && !existingWords.has(item.word.toLowerCase())) {
+              questionBank.push(item);
+              existingWords.add(item.word.toLowerCase());
+              added++;
+            }
+          });
+          saveBank();
+          draw30Questions();
+          alert(`成功匯入新增 ${added} 個單字！目前題庫共 ${questionBank.length} 題。`);
+        }
+      } catch (err) {
+        alert('JSON 格式錯誤：' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  }
+
+  // 將圖片轉為 Base64
+  function fileToGenerativePart(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64Data = reader.result.split(',')[1];
+        resolve({
+          inline_data: {
+            data: base64Data,
+            mime_type: file.type || 'image/jpeg'
+          }
+        });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // 處理上傳多張單字表圖片 -> 呼叫後端 /api/upload_images (若啟動 Python 後端) 或直接用瀏覽器呼叫 Gemini API (GitHub Pages 靜態部署)
+  async function handleMultipleImages(event) {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+
+    const statusEl = document.getElementById('uploadStatus');
+    statusEl.style.display = 'block';
+    statusEl.textContent = `⏳ 正在辨識 ${files.length} 張單字圖片，並以「小學三年級」程度生成英文挖空例句，請稍候...`;
+
+    const apiKey = document.getElementById('geminiApiKey').value.trim();
+
+    try {
+      let newItems = [];
+
+      // 先嘗試呼叫本地 Python Flask 後端 (如果有執行 app.py)
+      let usedBackend = false;
+      try {
+        const formData = new FormData();
+        files.forEach(f => formData.append('images', f));
+        if (apiKey) formData.append('api_key', apiKey);
+
+        const resp = await fetch('/api/extract-words', {
+          method: 'POST',
+          body: formData
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.words && Array.isArray(data.words)) {
+            newItems = data.words;
+            usedBackend = true;
+          }
+        }
+      } catch (backendErr) {
+        // 若在 GitHub Pages 純靜態環境，直接由前端呼叫 Gemini API
+      }
+
+      if (!usedBackend) {
+        if (!apiKey) {
+          alert('在 GitHub Pages 靜態網頁模式下，請先在上方輸入您的 Gemini API Key，即可直接上傳多張單字圖片自動辨識並產生小三例句！');
+          statusEl.style.display = 'none';
+          event.target.value = '';
+          return;
+        }
+
+        const imageParts = await Promise.all(files.map(fileToGenerativePart));
+        const promptText = `
+你是一位專業的小學三年級英文老師。請仔細辨識上傳的所有圖片中的每一個英文單字、詞性(POS)與中文解釋。
+並為每一個單字造一個「適合台灣小學三年級學生理解」的簡單、生活化英文例句。
+例句中出現該單字的位置請一律用 {blank} 取代（保持原型，方便學生作答）。
+
+請嚴格輸出 JSON Array 格式，不要包含其他多餘文字，範例如下：
+[
+  {
+    "word": "apple",
+    "pos": "n.",
+    "zh": "蘋果",
+    "sentence": "I eat a sweet red {blank} every day."
+  }
+]`;
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: promptText }, ...imageParts]
+            }],
+            generationConfig: {
+              responseMimeType: "application/json"
+            }
+          })
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`API 請求失敗: ${errText}`);
+        }
+
+        const result = await response.json();
+        const rawJson = result.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+        newItems = JSON.parse(rawJson);
+      }
+
+      // 將辨識出的單字合併入題庫
+      const existingWords = new Set(questionBank.map(q => q.word.toLowerCase()));
+      let addedCount = 0;
+      newItems.forEach((item, index) => {
+        if (item.word && item.sentence) {
+          const cleanWord = item.word.trim();
+          if (!existingWords.has(cleanWord.toLowerCase())) {
+            // 確保例句有 {blank}
+            let sent = item.sentence;
+            if (!sent.includes('{blank}')) {
+              const regex = new RegExp(cleanWord, 'i');
+              sent = sent.replace(regex, '{blank}');
+            }
+            questionBank.push({
+              id: questionBank.length + 1,
+              word: cleanWord,
+              pos: item.pos || '',
+              zh: item.zh || '',
+              sentence: sent
+            });
+            existingWords.add(cleanWord.toLowerCase());
+            addedCount++;
+          }
+        }
+      });
+
+      saveBank();
+      draw30Questions();
+      statusEl.textContent = `✅ 成功從 ${files.length} 張圖片新增 ${addedCount} 個單字（小學三年級例句）！目前題庫總數：${questionBank.length} 題。`;
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = `❌ 圖片解析失敗：${err.message}`;
+    } finally {
+      event.target.value = '';
+    }
+  }
+
+  function openBankModal() {
+    const modal = document.getElementById('bankModal');
+    const container = document.getElementById('bankTableContainer');
+    if (questionBank.length === 0) {
+      container.innerHTML = '<p>目前題庫是空的。</p>';
+    } else {
+      let rows = questionBank.map((q, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td><strong>${q.word}</strong> (${q.word.length}字)</td>
+          <td>${q.pos || ''}</td>
+          <td>${q.zh || ''}</td>
+          <td>${q.sentence.replace('{blank}', `<u><b>${q.word}</b></u>`)}</td>
+        </tr>
+      `).join('');
+      container.innerHTML = `
+        <table class="word-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>單字</th>
+              <th>詞性</th>
+              <th>中文解釋</th>
+              <th>小學三年級練習例句</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+    modal.style.display = 'flex';
+  }
+
+  function closeBankModal() {
+    document.getElementById('bankModal').style.display = 'none';
+  }
+
+  window.addEventListener('DOMContentLoaded', initApp);
+</script>
+</body>
+</html>
