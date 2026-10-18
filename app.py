@@ -15,7 +15,7 @@ def index():
 @app.route('/api/extract-words', methods=['POST'])
 def extract_words():
     api_key = request.form.get('api_key') or os.environ.get('GEMINI_API_KEY')
-    model_name = request.form.get('model_name') or 'gemini-3.8-flash'
+    model_name = request.form.get('model_name') or 'gemini-3.5-flash-lite'
     
     if not api_key:
         return jsonify({"error": "請提供 GEMINI_API_KEY"}), 400
