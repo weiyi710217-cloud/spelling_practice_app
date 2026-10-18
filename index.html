@@ -102,34 +102,34 @@
       gap: 6px;
       transition: all 0.15s ease;
       text-decoration: none;
+      user-select: none;
     }
 
-    .btn:active {
-      transform: translateY(1px);
-    }
+    .btn:active { transform: translateY(1px); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
     .btn-check { background-color: var(--blue-btn); color: #fff; }
-    .btn-check:hover { background-color: var(--blue-btn-hover); }
+    .btn-check:hover:not(:disabled) { background-color: var(--blue-btn-hover); }
 
     .btn-draw { background-color: var(--green-btn); color: #fff; }
-    .btn-draw:hover { background-color: var(--green-btn-hover); }
+    .btn-draw:hover:not(:disabled) { background-color: var(--green-btn-hover); }
 
     .btn-wrong { background-color: var(--red-btn); color: #fff; }
-    .btn-wrong:hover { background-color: var(--red-btn-hover); }
+    .btn-wrong:hover:not(:disabled) { background-color: var(--red-btn-hover); }
 
     .btn-secondary {
       background-color: var(--gray-btn);
       color: #37474f;
       border: 1px solid #cfd8dc;
     }
-    .btn-secondary:hover { background-color: var(--gray-btn-hover); }
+    .btn-secondary:hover:not(:disabled) { background-color: var(--gray-btn-hover); }
 
     .btn-danger-light {
       background-color: var(--gray-btn);
       color: #c62828;
       border: 1px solid #cfd8dc;
     }
-    .btn-danger-light:hover { background-color: #f9d8d6; }
+    .btn-danger-light:hover:not(:disabled) { background-color: #f9d8d6; }
 
     .bank-manager {
       background: #f8fafc;
@@ -169,7 +169,7 @@
       border: 1px solid #b0bec5;
       border-radius: 6px;
       font-size: 14px;
-      width: 230px;
+      width: 240px;
     }
 
     .model-input {
@@ -177,18 +177,40 @@
       border: 1px solid #b0bec5;
       border-radius: 6px;
       font-size: 14px;
-      width: 170px;
+      width: 175px;
       background-color: #fff;
       color: #0d47a1;
       font-weight: 600;
     }
 
+    /* 改用 label 直接綁定 file input，100% 避免瀏覽器阻擋點擊 */
+    .upload-label-btn {
+      background-color: var(--green-btn);
+      color: #fff;
+      border-radius: 7px;
+      padding: 11px 18px;
+      font-size: 15.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.15s;
+    }
+    .upload-label-btn:hover { background-color: var(--green-btn-hover); }
+
     .upload-status {
-      margin-top: 10px;
-      font-size: 14px;
+      margin-top: 12px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14.5px;
+      line-height: 1.5;
+      background: #e3f2fd;
+      border: 1px solid #90caf9;
       color: #0d47a1;
       font-weight: 600;
       display: none;
+      white-space: pre-line;
     }
 
     .questions-list {
@@ -212,15 +234,8 @@
       transition: border-color 0.2s, background-color 0.2s;
     }
 
-    .question-card.correct-card {
-      background-color: #f1f8e9;
-      border-color: #81c784;
-    }
-
-    .question-card.wrong-card {
-      background-color: #ffebee;
-      border-color: #e57373;
-    }
+    .question-card.correct-card { background-color: #f1f8e9; border-color: #81c784; }
+    .question-card.wrong-card { background-color: #ffebee; border-color: #e57373; }
 
     .q-num {
       font-weight: 700;
@@ -246,10 +261,7 @@
       flex-shrink: 0;
     }
 
-    .speaker-btn:hover {
-      background-color: #1e7a38;
-      transform: scale(1.06);
-    }
+    .speaker-btn:hover { background-color: #1e7a38; transform: scale(1.06); }
 
     .sentence-wrap {
       flex: 1;
@@ -338,7 +350,7 @@
 
     .modal-card {
       background: #fff;
-      max-width: 680px;
+      max-width: 720px;
       width: 100%;
       border-radius: 12px;
       padding: 24px;
@@ -388,7 +400,7 @@
   <div class="bank-manager">
     <div class="bank-manager-header">
       <div class="bank-manager-title">
-        📸 題庫管理（已內建單字表 #81~#160 共 80 題小學三年級例句，支援上傳多張單字圖片自動擴充題庫）
+        📸 題庫管理（支援上傳多張單字表圖片，自動壓縮加速並產生小學三年級例句）
       </div>
       <div class="bank-controls">
         <button class="btn btn-secondary" onclick="openBankModal()">📋 檢視目前題庫 (<span id="totalBankBadge">80</span>)</button>
@@ -398,16 +410,21 @@
     </div>
 
     <div class="bank-controls">
-      <input type="password" id="geminiApiKey" class="api-key-input" placeholder="輸入 Gemini API Key" />
-      <input type="text" id="geminiModelName" class="model-input" value="gemini-3.8-flash" title="可自訂 Gemini 模型名稱" placeholder="模型名稱 (如 gemini-3.8-flash)" />
-      <input type="file" id="imageUploadInput" accept="image/*" multiple style="display:none" onchange="handleMultipleImages(event)" />
-      <button class="btn btn-draw" onclick="document.getElementById('imageUploadInput').click()">
+      <input type="password" id="geminiApiKey" class="api-key-input" placeholder="貼上 Gemini API Key (必填)" />
+      <input type="text" id="geminiModelName" class="model-input" value="gemini-3.8-flash" title="可自訂模型名稱" placeholder="模型名稱" />
+      
+      <!-- 使用 label 直接觸發 input，相容所有手機/平板/電腦瀏覽器 -->
+      <label for="imageUploadInput" class="upload-label-btn" id="uploadBtnLabel">
         📤 上傳多張單字圖片 (自動產生小三例句)
-      </button>
+      </label>
+      <input type="file" id="imageUploadInput" accept="image/*" multiple style="display:none" />
+
       <button class="btn btn-secondary" onclick="exportFullBank()">⬇️ 匯出題庫 JSON</button>
-      <input type="file" id="jsonImportInput" accept=".json" style="display:none" onchange="importBankJson(event)" />
-      <button class="btn btn-secondary" onclick="document.getElementById('jsonImportInput').click()">⬆️ 匯入題庫 JSON</button>
+      <label for="jsonImportInput" class="btn btn-secondary" style="cursor:pointer;">⬆️ 匯入題庫 JSON</label>
+      <input type="file" id="jsonImportInput" accept=".json" style="display:none" />
     </div>
+
+    <!-- 即時狀態顯示框 -->
     <div id="uploadStatus" class="upload-status"></div>
   </div>
 
@@ -526,20 +543,20 @@
 
   function initApp() {
     const savedKey = localStorage.getItem(STORAGE_KEYS.API_KEY);
-    if (savedKey) {
-      document.getElementById('geminiApiKey').value = savedKey;
-    }
-    document.getElementById('geminiApiKey').addEventListener('change', (e) => {
+    if (savedKey) document.getElementById('geminiApiKey').value = savedKey;
+    document.getElementById('geminiApiKey').addEventListener('input', (e) => {
       localStorage.setItem(STORAGE_KEYS.API_KEY, e.target.value.trim());
     });
 
     const savedModel = localStorage.getItem(STORAGE_KEYS.MODEL_NAME);
-    if (savedModel) {
-      document.getElementById('geminiModelName').value = savedModel;
-    }
-    document.getElementById('geminiModelName').addEventListener('change', (e) => {
+    if (savedModel) document.getElementById('geminiModelName').value = savedModel;
+    document.getElementById('geminiModelName').addEventListener('input', (e) => {
       localStorage.setItem(STORAGE_KEYS.MODEL_NAME, e.target.value.trim() || 'gemini-3.8-flash');
     });
+
+    // 綁定檔案上傳事件
+    document.getElementById('imageUploadInput').addEventListener('change', handleMultipleImages);
+    document.getElementById('jsonImportInput').addEventListener('change', importBankJson);
 
     const savedBank = localStorage.getItem(STORAGE_KEYS.BANK);
     if (savedBank !== null) {
@@ -554,361 +571,11 @@
     }
 
     try {
-      const p = JSON.parse(localStorage.getItem(STORAGE_KEYS.PRACTICED) || '[]');
-      practicedIds = new Set(p);
-      const w = JSON.parse(localStorage.getItem(STORAGE_KEYS.WRONG) || '[]');
-      wrongIds = new Set(w);
+      practicedIds = new Set(JSON.parse(localStorage.getItem(STORAGE_KEYS.PRACTICED) || '[]'));
+      wrongIds = new Set(JSON.parse(localStorage.getItem(STORAGE_KEYS.WRONG) || '[]'));
     } catch (e) {
       practicedIds = new Set();
       wrongIds = new Set();
     }
 
-    draw30Questions();
-  }
-
-  function saveBank() {
-    localStorage.setItem(STORAGE_KEYS.BANK, JSON.stringify(questionBank));
-    updateDashboard(0, currentQuiz.length);
-  }
-
-  function saveProgress() {
-    localStorage.setItem(STORAGE_KEYS.PRACTICED, JSON.stringify([...practicedIds]));
-    localStorage.setItem(STORAGE_KEYS.WRONG, JSON.stringify([...wrongIds]));
-  }
-
-  function updateDashboard(score = 0, total = currentQuiz.length) {
-    document.getElementById('scoreDisplay').textContent = `得分：${score} /${total}`;
-    document.getElementById('wrongCountDisplay').textContent = `錯題資料庫：${wrongIds.size} 題`;
-    document.getElementById('progressDisplay').textContent = `本輪進度：${practicedIds.size} /${questionBank.length} 題`;
-    document.getElementById('totalBankBadge').textContent = questionBank.length;
-  }
-
-  function shuffleArray(arr) {
-    const copy = [...arr];
-    for (let i = copy.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy;
-  }
-
-  function draw30Questions() {
-    isWrongMode = false;
-    if (questionBank.length === 0) {
-      currentQuiz = [];
-      renderQuestions();
-      updateDashboard(0, 0);
-      return;
-    }
-
-    const unpracticed = questionBank.filter(q => !practicedIds.has(q.word.toLowerCase()));
-    const practiced = questionBank.filter(q => practicedIds.has(q.word.toLowerCase()));
-
-    let pool = [...shuffleArray(unpracticed), ...shuffleArray(practiced)];
-    currentQuiz = pool.slice(0, Math.min(30, pool.length));
-
-    currentQuiz.forEach(q => practicedIds.add(q.word.toLowerCase()));
-    saveProgress();
-
-    renderQuestions();
-    updateDashboard(0, currentQuiz.length);
-  }
-
-  function practiceWrongOnly() {
-    const wrongList = questionBank.filter(q => wrongIds.has(q.word.toLowerCase()));
-    if (wrongList.length === 0) {
-      alert('目前錯題資料庫為 0 題！太棒了！');
-      return;
-    }
-    isWrongMode = true;
-    currentQuiz = shuffleArray(wrongList);
-    renderQuestions();
-    updateDashboard(0, currentQuiz.length);
-  }
-
-  function renderQuestions() {
-    const container = document.getElementById('questionsContainer');
-    container.innerHTML = '';
-
-    if (currentQuiz.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state">
-          📭 目前題庫沒有題目。請點擊上方「📤 上傳多張單字圖片」新增題庫，或點擊「🔄 還原預設80題」。
-        </div>`;
-      return;
-    }
-
-    currentQuiz.forEach((item, idx) => {
-      const wordLen = item.word.trim().length;
-      const parts = item.sentence.split('{blank}');
-      const beforeText = parts[0] || '';
-      const afterText = parts[1] || '';
-
-      const card = document.createElement('div');
-      card.className = 'question-card';
-      card.id = `q-card-${idx}`;
-
-      card.innerHTML = `
-        <div class="q-num">#${idx + 1}</div>
-        <button class="speaker-btn" title="點擊聽單字與例句發音" onclick="speakQuestion(${idx})">
-          🔊
-        </button>
-        <div class="sentence-wrap">
-          <span>${beforeText}</span>
-          <input
-            type="text"
-            class="word-input"
-            id="input-${idx}"
-            placeholder="(${wordLen}字)"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-            onkeydown="if(event.key==='Enter') checkAnswers();"
-          />
-          <span>${afterText}</span>
-          <span class="hint-badge" title="點擊聽單字發音" onclick="speakWordOnly(${idx})">
-            ${item.pos \vert{}\vert{} ''}${item.zh || ''}
-          </span>
-        </div>
-        <div class="feedback-row" id="feedback-${idx}"></div>
-      `;
-
-      container.appendChild(card);
-    });
-  }
-
-  function speakQuestion(idx) {
-    const item = currentQuiz[idx];
-    if (!item || !('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-
-    const fullSentence = item.sentence.replace('{blank}', item.word);
-    const utterWord = new SpeechSynthesisUtterance(item.word);
-    utterWord.lang = 'en-US';
-    utterWord.rate = 0.85;
-
-    const utterSentence = new SpeechSynthesisUtterance(fullSentence);
-    utterSentence.lang = 'en-US';
-    utterSentence.rate = 0.9;
-
-    window.speechSynthesis.speak(utterWord);
-    window.speechSynthesis.speak(utterSentence);
-  }
-
-  function speakWordOnly(idx) {
-    const item = currentQuiz[idx];
-    if (!item || !('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const utterWord = new SpeechSynthesisUtterance(item.word);
-    utterWord.lang = 'en-US';
-    utterWord.rate = 0.85;
-    window.speechSynthesis.speak(utterWord);
-  }
-
-  function checkAnswers() {
-    if (currentQuiz.length === 0) return;
-    let correctCount = 0;
-
-    currentQuiz.forEach((item, idx) => {
-      const inputEl = document.getElementById(`input-${idx}`);
-      const cardEl = document.getElementById(`q-card-${idx}`);
-      const feedbackEl = document.getElementById(`feedback-${idx}`);
-
-      const userAns = (inputEl.value || '').trim().toLowerCase();
-      const targetAns = item.word.trim().toLowerCase();
-
-      inputEl.classList.remove('input-correct', 'input-wrong');
-      cardEl.classList.remove('correct-card', 'wrong-card');
-      feedbackEl.style.display = 'block';
-
-      if (userAns === targetAns) {
-        correctCount++;
-        inputEl.classList.add('input-correct');
-        cardEl.classList.add('correct-card');
-        feedbackEl.className = 'feedback-row feedback-correct';
-        feedbackEl.textContent = `✓ 答對了！ ${item.word} (${item.pos}${item.zh})`;
-
-        if (isWrongMode) {
-          wrongIds.delete(targetAns);
-        }
-      } else {
-        inputEl.classList.add('input-wrong');
-        cardEl.classList.add('wrong-card');
-        feedbackEl.className = 'feedback-row feedback-wrong';
-        feedbackEl.textContent = `✗ 正確答案：${item.word} （${item.pos}${item.zh}）`;
-
-        wrongIds.add(targetAns);
-      }
-    });
-
-    saveProgress();
-    updateDashboard(correctCount, currentQuiz.length);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  function resetRoundProgress() {
-    if (!confirm('確定要重置本輪進度嗎？（已練過的題目紀錄將歸零，錯題庫會保留）')) return;
-    practicedIds.clear();
-    saveProgress();
-    draw30Questions();
-  }
-
-  function exportWrongBank() {
-    const wrongList = questionBank.filter(q => wrongIds.has(q.word.toLowerCase()));
-    if (wrongList.length === 0) {
-      alert('目前沒有錯題可以匯出！');
-      return;
-    }
-    let content = "No.\tWord\tPOS\t中文解釋\t練習例句\n";
-    wrongList.forEach((item, i) => {
-      const fullSent = item.sentence.replace('{blank}', `[${item.word}]`);
-      content += `${i + 1}\t${item.word}\t${item.pos}\t${item.zh}\t${fullSent}\n`;
-    });
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `wrong_words_${new Date().toISOString().slice(0,10)}.txt`;
-    a.click();
-  }
-
-  function clearWrongBank() {
-    if (wrongIds.size === 0) {
-      alert('錯題庫已經是空的！');
-      return;
-    }
-    if (!confirm('確定要清空所有錯題紀錄嗎？')) return;
-    wrongIds.clear();
-    saveProgress();
-    if (isWrongMode) {
-      draw30Questions();
-    } else {
-      updateDashboard(0, currentQuiz.length);
-    }
-  }
-
-  function clearEntireQuestionBank() {
-    if (!confirm('⚠️ 確定要「清除題庫」嗎？\n清除後題庫將變為 0 題，您可以重新上傳單字圖片建立新題庫（或隨時點「還原預設80題」）。')) return;
-    questionBank = [];
-    practicedIds.clear();
-    wrongIds.clear();
-    currentQuiz = [];
-    saveBank();
-    saveProgress();
-    renderQuestions();
-    updateDashboard(0, 0);
-  }
-
-  function restoreDefaultBank() {
-    if (!confirm('確定要載入/還原附圖的預設 80 個單字題庫 (#81 ~ #160) 嗎？')) return;
-    questionBank = [...DEFAULT_BANK];
-    practicedIds.clear();
-    saveBank();
-    saveProgress();
-    draw30Questions();
-  }
-
-  function exportFullBank() {
-    const blob = new Blob([JSON.stringify(questionBank, null, 2)], { type: 'application/json;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `spelling_question_bank_${questionBank.length}words.json`;
-    a.click();
-  }
-
-  function importBankJson(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const imported = JSON.parse(e.target.result);
-        if (Array.isArray(imported)) {
-          const existingWords = new Set(questionBank.map(q => q.word.toLowerCase()));
-          let added = 0;
-          imported.forEach(item => {
-            if (item.word && item.sentence && !existingWords.has(item.word.toLowerCase())) {
-              questionBank.push(item);
-              existingWords.add(item.word.toLowerCase());
-              added++;
-            }
-          });
-          saveBank();
-          draw30Questions();
-          alert(`成功匯入新增 ${added} 個單字！目前題庫共 ${questionBank.length} 題。`);
-        }
-      } catch (err) {
-        alert('JSON 格式錯誤：' + err.message);
-      }
-    };
-    reader.readAsText(file);
-    event.target.value = '';
-  }
-
-  function fileToGenerativePart(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64Data = reader.result.split(',')[1];
-        resolve({
-          inline_data: {
-            data: base64Data,
-            mime_type: file.type || 'image/jpeg'
-          }
-        });
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
-  async function handleMultipleImages(event) {
-    const files = Array.from(event.target.files);
-    if (files.length === 0) return;
-
-    const apiKey = document.getElementById('geminiApiKey').value.trim();
-    const modelName = (document.getElementById('geminiModelName').value || 'gemini-3.8-flash').trim().replace(/^models\//, '');
-
-    const statusEl = document.getElementById('uploadStatus');
-    statusEl.style.display = 'block';
-    statusEl.textContent = `⏳ 正在使用 ${modelName} 辨識 ${files.length} 張單字圖片，並以「小學三年級」程度生成英文挖空例句，請稍候...`;
-
-    try {
-      let newItems = [];
-      let usedBackend = false;
-
-      try {
-        const formData = new FormData();
-        files.forEach(f => formData.append('images', f));
-        if (apiKey) formData.append('api_key', apiKey);
-        formData.append('model_name', modelName);
-
-        const resp = await fetch('/api/extract-words', {
-          method: 'POST',
-          body: formData
-        });
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data.words && Array.isArray(data.words)) {
-            newItems = data.words;
-            usedBackend = true;
-          }
-        }
-      } catch (backendErr) {
-        // GitHub Pages 純前端環境直接跳過後端
-      }
-
-      if (!usedBackend) {
-        if (!apiKey) {
-          alert('在 GitHub Pages 靜態網頁模式下，請先在上方輸入您的 Gemini API Key，即可直接上傳多張單字圖片自動辨識並產生小三例句！');
-          statusEl.style.display = 'none';
-          event.target.value = '';
-          return;
-        }
-
-        const imageParts = await Promise.all(files.map(fileToGenerativePart));
-        const promptText = `
-你是一位專業的小學三年級英文老師。請仔細辨識上傳的所有圖片中的每一個英文單字、詞性(POS)與中文解釋。
-並為每一個單字造一個「適合台灣小學三年級學生理解」的簡單、生活化英文例句。
-例句中出現該單字的位置請一律用 {blank} 取代（保持原型，
+    draw3
