@@ -399,7 +399,7 @@
   <div class="bank-manager">
     <div class="bank-manager-header">
       <div class="bank-manager-title">
-        📸 題庫管理（支援上傳多張單字表圖片，自動序列排隊不 busy）
+        📸 題庫管理（純前端直連 API，支援多圖循序排隊防 busy）
       </div>
       <div class="bank-controls">
         <button class="btn btn-secondary" onclick="openBankModal()">📋 檢視目前題庫 (<span id="totalBankBadge">80</span>)</button>
@@ -659,7 +659,6 @@
       card.className = 'question-card';
       card.id = `q-card-${idx}`;
 
-      // 需求 1：拿掉中文意思，只保留詞性 (POS) 提示
       card.innerHTML = `
         <div class="q-num">#${idx + 1}</div>
         <button class="speaker-btn" title="點擊聽單字與例句發音" onclick="speakQuestion(${idx})">
@@ -717,7 +716,6 @@
     window.speechSynthesis.speak(utterWord);
   }
 
-  // 需求 2：檢查答案時，未填寫的格子保持空白，不秀出答案與錯誤提示
   function checkAnswers() {
     if (currentQuiz.length === 0) return;
     let correctCount = 0;
@@ -731,7 +729,6 @@
       const userAns = (inputEl.value || '').trim().toLowerCase();
       const targetAns = item.word.trim().toLowerCase();
 
-      // 如果未填寫，保持原狀不批改
       if (userAns === '') {
         inputEl.classList.remove('input-correct', 'input-wrong');
         cardEl.classList.remove('correct-card', 'wrong-card');
@@ -951,8 +948,8 @@
     }
   }
 
-  // 需求 3：依序序列處理上傳圖片，加入自動重試機制與安全延遲，避免伺服器 busy
-async function handleMultipleImages(event) {
+  // 純前端直連 API：一張一張依序循序排隊處理，內建 429/503 自動重試與 2 秒安全間隔
+  async function handleMultipleImages(event) {
     const fileList = event.target.files;
     if (!fileList || fileList.length === 0) return;
 
@@ -975,85 +972,149 @@ async function handleMultipleImages(event) {
 
     statusEl.style.background = '#e3f2fd';
     statusEl.style.color = '#0d47a1';
-    statusEl.textContent = `⏳ 正在透過 Python 後端安全傳送 ${files.length} 張圖片進行 AI 辨識...`;
+
+    let totalAdded = 0;
+    let totalUpdated = 0;
+
+    const wordIndexMap = new Map();
+    questionBank.forEach((q, idx) => wordIndexMap.set(q.word.toLowerCase(), idx));
 
     try {
-      const formData = new FormData();
-      files.forEach(f => formData.append('images', f));
-      formData.append('api_key', apiKey);
-      formData.append('model_name', modelName);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        statusEl.innerHTML = `⏳ 正在循序處理第 <b>${i + 1} / ${files.length}</b> 張圖片（${file.name}）...\n壓縮圖片並向 AI 請求中...`;
 
-      const resp = await fetch('/api/extract-words', {
-        method: 'POST',
-        body: formData
-      });
+        const imagePart = await compressImageToPart(file);
 
-      if (!resp.ok) {
-        const errJson = await resp.json();
-        throw new Error(errJson.error || `伺服器回應錯誤 (${resp.status})`);
-      }
+        const promptText = `
+你是一位專業的小學三年級英文老師。請仔細辨識這張圖片中的每一個英文單字、詞性(POS)與中文解釋。
+並為每一個單字造一個「適合台灣小學三年級學生理解」的簡單、生活化英文例句。
+例句中出現該單字的位置請一律用 {blank} 取代（保持原型，方便學生作答）。
 
-      const data = await resp.json();
-      const rawText = data.raw_text || '';
+【重要格式要求】
+請每一行輸出一個單字，欄位之間用三個直線「 ||| 」分隔，格式嚴格如下：
+單字 ||| 詞性 ||| 中文解釋 ||| 包含 {blank} 的英文例句
 
-      if (!rawText) {
-        throw new Error('未能從圖片中解析出任何文字內容。');
-      }
+範例：
+persistent ||| adj. ||| 堅持不懈的/持續的 ||| The little boy is very {blank} and tries again and again.
 
-      const parsedItems = parseAiResponseText(rawText);
-      if (parsedItems.length === 0) {
-        throw new Error('解析格式發生錯誤，請確認圖片內容是否清晰。');
-      }
+請直接輸出單字資料行，不要加上任何說明文字：`;
 
-      const wordIndexMap = new Map();
-      questionBank.forEach((q, idx) => wordIndexMap.set(q.word.toLowerCase(), idx));
+        let response = null;
+        let success = false;
+        let lastErr = '';
 
-      let totalAdded = 0;
-      let totalUpdated = 0;
+        for (let attempt = 1; attempt <= 4; attempt++) {
+          try {
+            const apiUrl = `[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
+            
+            response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{
+                  parts: [
+                    { text: promptText },
+                    {
+                      inline_data: {
+                        mime_type: imagePart.inline_data.mime_type,
+                        data: imagePart.inline_data.data
+                      }
+                    }
+                  ]
+                }],
+                generationConfig: {
+                  temperature: 0.2,
+                  maxOutputTokens: 8192
+                }
+              })
+            });
 
-      parsedItems.forEach((item) => {
-        const cleanWord = String(item.word || '').trim();
-        if (!cleanWord || !item.sentence) return;
-
-        let sent = String(item.sentence).trim();
-        if (!sent.includes('{blank}')) {
-          const escaped = cleanWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const regex = new RegExp(escaped, 'i');
-          if (regex.test(sent)) {
-            sent = sent.replace(regex, '{blank}');
-          } else {
-            sent = `${sent} ({blank})`;
+            if (response.ok) {
+              success = true;
+              break;
+            } else {
+              const errBody = await response.text();
+              lastErr = errBody;
+              if (response.status === 429 || response.status === 503) {
+                statusEl.textContent = `⚠️ 伺服器忙碌中 (Busy)，正在進行第 ${attempt}/4 次自動重試...`;
+                await new Promise(r => setTimeout(r, 3000 * attempt));
+                continue;
+              } else {
+                throw new Error(`API 錯誤 (${response.status}): ${errBody}`);
+              }
+            }
+          } catch (netErr) {
+            lastErr = netErr.message;
+            if (attempt < 4) {
+              await new Promise(r => setTimeout(r, 2000));
+              continue;
+            }
           }
         }
 
-        const key = cleanWord.toLowerCase();
-        const newEntry = {
-          id: questionBank.length + 1,
-          word: cleanWord,
-          pos: item.pos || '',
-          zh: item.zh || '',
-          sentence: sent
-        };
-
-        if (wordIndexMap.has(key)) {
-          const existIdx = wordIndexMap.get(key);
-          questionBank[existIdx] = { ...questionBank[existIdx], ...newEntry };
-          totalUpdated++;
-        } else {
-          questionBank.push(newEntry);
-          wordIndexMap.set(key, questionBank.length - 1);
-          totalAdded++;
+        if (!success) {
+          throw new Error(`第 ${i + 1} 張圖片請求失敗: ${lastErr}`);
         }
-      });
 
-      saveBank();
+        const result = await response.json();
+        const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const parsedItems = parseAiResponseText(rawText);
+
+        if (parsedItems.length === 0) {
+          throw new Error(`第 ${i + 1} 張圖片未能解析出單字。`);
+        }
+
+        parsedItems.forEach((item) => {
+          const cleanWord = String(item.word || '').trim();
+          if (!cleanWord || !item.sentence) return;
+
+          let sent = String(item.sentence).trim();
+          if (!sent.includes('{blank}')) {
+            const escaped = cleanWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escaped, 'i');
+            if (regex.test(sent)) {
+              sent = sent.replace(regex, '{blank}');
+            } else {
+              sent = `${sent} ({blank})`;
+            }
+          }
+
+          const key = cleanWord.toLowerCase();
+          const newEntry = {
+            id: questionBank.length + 1,
+            word: cleanWord,
+            pos: item.pos || '',
+            zh: item.zh || '',
+            sentence: sent
+          };
+
+          if (wordIndexMap.has(key)) {
+            const existIdx = wordIndexMap.get(key);
+            questionBank[existIdx] = { ...questionBank[existIdx], ...newEntry };
+            totalUpdated++;
+          } else {
+            questionBank.push(newEntry);
+            wordIndexMap.set(key, questionBank.length - 1);
+            totalAdded++;
+          }
+        });
+
+        saveBank();
+        
+        // 每張圖片處理完後刻意暫停 2 秒，完全避免伺服器 busy
+        if (i < files.length - 1) {
+          await new Promise(r => setTimeout(r, 2000));
+        }
+      }
+
       practicedIds.clear();
       saveProgress();
       draw30Questions();
 
       statusEl.style.background = '#e8f5e9';
       statusEl.style.color = '#1b5e20';
-      statusEl.textContent = `✅ 圖片解析完成！成功新增 ${totalAdded} 個單字、更新 ${totalUpdated} 個單字例句。\n目前題庫總數：${questionBank.length} 題！`;
+      statusEl.textContent = `✅ 全部 ${files.length} 張圖片處理完畢！\n成功新增 ${totalAdded} 個單字、更新 ${totalUpdated} 個單字例句。\n目前題庫總數：${questionBank.length} 題！`;
     } catch (err) {
       console.error(err);
       statusEl.style.background = '#ffebee';
