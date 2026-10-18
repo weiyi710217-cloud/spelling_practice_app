@@ -19,7 +19,7 @@ def extract_words():
     並自動用「台灣小學三年級」的英文能力造出挖空練習句 ({blank})。
     """
     api_key = request.form.get('api_key') or os.environ.get('GEMINI_API_KEY')
-    model_name = request.form.get('model_name') or 'gemini-3.5-flash-lite'
+    model_name = request.form.get('model_name') or 'gemini-3.8-flash'
     if not api_key:
         return jsonify({"error": "請提供 GEMINI_API_KEY"}), 400
 
