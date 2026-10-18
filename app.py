@@ -15,10 +15,11 @@ def index():
 @app.route('/api/extract-words', methods=['POST'])
 def extract_words():
     """
-    接收前端上傳的多張單字表圖片，使用 Gemini Vision 擷取所有單字，
+    接收前端上傳的多張單字表圖片，使用 Gemini 3.8 Flash 擷取所有單字，
     並自動用「台灣小學三年級」的英文能力造出挖空練習句 ({blank})。
     """
     api_key = request.form.get('api_key') or os.environ.get('GEMINI_API_KEY')
+    model_name = request.form.get('model_name') or 'gemini-3.8-flash'
     if not api_key:
         return jsonify({"error": "請提供 GEMINI_API_KEY"}), 400
 
@@ -52,7 +53,7 @@ def extract_words():
         contents.append(img)
 
     response = client.models.generate_content(
-        model='gemini-2.5-flash',
+        model=model_name,
         contents=contents,
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
@@ -61,7 +62,10 @@ def extract_words():
     )
 
     try:
-        words_list = json.loads(response.text)
+        raw_text = response.text.strip()
+        if raw_text.startswith("```"):
+            raw_text = raw_text.strip("`").removeprefix("json").strip()
+        words_list = json.loads(raw_text)
         return jsonify({"words": words_list})
     except Exception as e:
         return jsonify({"error": f"解析 JSON 失敗: {str(e)}", "raw": response.text}), 500
