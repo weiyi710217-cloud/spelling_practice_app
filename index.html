@@ -1006,7 +1006,8 @@ persistent ||| adj. ||| 堅持不懈的/持續的 ||| The little boy is very {bl
 
         for (let attempt = 1; attempt <= 4; attempt++) {
           try {
-            const apiUrl = `[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
+            // 使用 Google 官方標準的 generateContent 專用端點
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
             
             response = await fetch(apiUrl, {
               method: 'POST',
