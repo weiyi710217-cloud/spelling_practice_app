@@ -15,11 +15,12 @@ def index():
 @app.route('/api/extract-words', methods=['POST'])
 def extract_words():
     """
-    接收前端上傳的多張單字表圖片，使用 Gemini 3.8 Flash 擷取所有單字，
-    並自動用「台灣小學三年級」的英文能力造出挖空練習句 ({blank})。
+    接收前端上傳的圖片，透過官方 google-genai SDK 進行辨識，
+    完美避開前端直接呼叫 API 產生的 405 或 CORS 錯誤。
     """
     api_key = request.form.get('api_key') or os.environ.get('GEMINI_API_KEY')
     model_name = request.form.get('model_name') or 'gemini-3.8-flash'
+    
     if not api_key:
         return jsonify({"error": "請提供 GEMINI_API_KEY"}), 400
 
@@ -27,48 +28,46 @@ def extract_words():
     if not files:
         return jsonify({"error": "未收到任何圖片檔案"}), 400
 
-    client = genai.Client(api_key=api_key)
-
-    contents = []
-    prompt = """
-你是一位專業的小學三年級英文老師。請仔細辨識上傳的所有圖片中的每一個英文單字、詞性(POS)與中文解釋。
-並為每一個單字造一個「適合台灣小學三年級學生理解」的簡單、生活化英文例句。
-例句中出現該單字的位置請一律用 {blank} 取代（保持單字原型，方便學生進行克漏字填空練習）。
-
-請嚴格輸出 JSON Array 格式：
-[
-  {
-    "word": "apple",
-    "pos": "n.",
-    "zh": "蘋果",
-    "sentence": "I eat a sweet red {blank} every day."
-  }
-]
-"""
-    contents.append(prompt)
-
-    for f in files:
-        img_bytes = f.read()
-        img = Image.open(io.BytesIO(img_bytes))
-        contents.append(img)
-
-    response = client.models.generate_content(
-        model=model_name,
-        contents=contents,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            temperature=0.2,
-        ),
-    )
-
     try:
-        raw_text = response.text.strip()
-        if raw_text.startswith("```"):
-            raw_text = raw_text.strip("`").removeprefix("json").strip()
-        words_list = json.loads(raw_text)
-        return jsonify({"words": words_list})
+        client = genai.Client(api_key=api_key)
+        
+        prompt = """
+你是一位專業的小學三年級英文老師。請仔細辨識這張圖片中的每一個英文單字、詞性(POS)與中文解釋。
+並為每一個單字造一個「適合台灣小學三年級學生理解」的簡單、生活化英文例句。
+例句中出現該單字的位置請一律用 {blank} 取代（保持原型，方便學生作答）。
+
+【重要格式要求】
+請每一行輸出一個單字，欄位之間用三個直線「 ||| 」分隔，格式嚴格如下：
+單字 ||| 詞性 ||| 中文解釋 ||| 包含 {blank} 的英文例句
+
+範例：
+persistent ||| adj. ||| 堅持不懈的/持續的 ||| The little boy is very {blank} and tries again and again.
+
+請直接輸出單字資料行，不要加上任何說明文字：
+"""
+
+        all_text_results = []
+
+        for f in files:
+            img_bytes = f.read()
+            img = Image.open(io.BytesIO(img_bytes))
+
+            response = client.models.generate_content(
+                model=model_name,
+                contents=[prompt, img],
+                config=types.GenerateContentConfig(
+                    temperature=0.2,
+                    max_output_tokens=8192
+                ),
+            )
+            if response.text:
+                all_text_results.append(response.text)
+
+        combined_text = "\n".join(all_text_results)
+        return jsonify({"raw_text": combined_text})
+
     except Exception as e:
-        return jsonify({"error": f"解析 JSON 失敗: {str(e)}", "raw": response.text}), 500
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':
