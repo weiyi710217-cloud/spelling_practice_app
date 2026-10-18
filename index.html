@@ -548,7 +548,7 @@
     const savedModel = localStorage.getItem(STORAGE_KEYS.MODEL_NAME);
     if (savedModel) document.getElementById('geminiModelName').value = savedModel;
     document.getElementById('geminiModelName').addEventListener('input', (e) => {
-      localStorage.setItem(STORAGE_KEYS.MODEL_NAME, e.target.value.trim() || 'gemini-3.8-flash');
+      localStorage.setItem(STORAGE_KEYS.MODEL_NAME, e.target.value.trim() || 'gemini-3.5-flash-lite');
     });
 
     document.getElementById('imageUploadInput').addEventListener('change', handleMultipleImages);
@@ -963,7 +963,7 @@
     statusEl.style.display = 'block';
 
     const apiKey = document.getElementById('geminiApiKey').value.trim();
-    const modelName = (document.getElementById('geminiModelName').value || 'gemini-3.8-flash').trim().replace(/^models\//, '');
+    const modelName = (document.getElementById('geminiModelName').value || 'gemini-3.5-flash-lite').trim().replace(/^models\//, '');
 
     if (!apiKey) {
       statusEl.style.background = '#ffebee';
