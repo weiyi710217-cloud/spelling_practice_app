@@ -14,10 +14,6 @@ def index():
 
 @app.route('/api/extract-words', methods=['POST'])
 def extract_words():
-    """
-    接收前端上傳的圖片，透過官方 google-genai SDK 進行辨識，
-    完美避開前端直接呼叫 API 產生的 405 或 CORS 錯誤。
-    """
     api_key = request.form.get('api_key') or os.environ.get('GEMINI_API_KEY')
     model_name = request.form.get('model_name') or 'gemini-3.8-flash'
     
@@ -30,7 +26,6 @@ def extract_words():
 
     try:
         client = genai.Client(api_key=api_key)
-        
         prompt = """
 你是一位專業的小學三年級英文老師。請仔細辨識這張圖片中的每一個英文單字、詞性(POS)與中文解釋。
 並為每一個單字造一個「適合台灣小學三年級學生理解」的簡單、生活化英文例句。
@@ -47,7 +42,6 @@ persistent ||| adj. ||| 堅持不懈的/持續的 ||| The little boy is very {bl
 """
 
         all_text_results = []
-
         for f in files:
             img_bytes = f.read()
             img = Image.open(io.BytesIO(img_bytes))
@@ -63,14 +57,11 @@ persistent ||| adj. ||| 堅持不懈的/持續的 ||| The little boy is very {bl
             if response.text:
                 all_text_results.append(response.text)
 
-        combined_text = "\n".join(all_text_results)
-        return jsonify({"raw_text": combined_text})
-
+        return jsonify({"raw_text": "\n".join(all_text_results)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    print(f"🚀 互動式單字練習 App 已啟動：http://127.0.0.1:{port}")
+    print(f"🚀 App 已啟動：http://127.0.0.1:{port}")
     app.run(host='0.0.0.0', port=port, debug=True)
